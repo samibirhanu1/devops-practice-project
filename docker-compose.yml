@@ -69,6 +69,23 @@ services:
       - monitoring-net
     restart: unless-stopped
 
+  grafana:
+    image: grafana/grafana:13.2.3
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring-net
+    restart: unless-stopped
+
 networks:
   frontend-net:
     driver: bridge
@@ -80,3 +97,4 @@ networks:
 volumes:
   db-data:
   prometheus-data:
+  grafana-data:
