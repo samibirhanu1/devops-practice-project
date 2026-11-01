@@ -1,6 +1,11 @@
 # Local development only. Compose loads this file automatically next to
-# docker-compose.yml, so "docker compose up --build" builds the API from ./app.
-# The server only receives docker-compose.yml, so it pulls the published image.
+# docker-compose.yml. The server only receives docker-compose.yml.
 services:
   api:
     build: ./app
+
+  node-exporter:
+    # Docker Desktop cannot use "rslave" on the root mount, so locally
+    # we mount the same path without it.
+    volumes:
+      - /:/host:ro
