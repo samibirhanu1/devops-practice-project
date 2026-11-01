@@ -20,6 +20,10 @@ echo "==> Deploying image tag $IMAGE_TAG"
 docker compose pull
 docker compose up -d --remove-orphans
 
+# Prometheus reads its config at startup. Tell it to reload, in case the
+# monitoring files changed in this deploy.
+docker compose kill -s HUP prometheus
+
 # Nginx looks up the API's address when it starts. Reload so it finds the
 # new API container if it was recreated.
 docker compose exec -T nginx nginx -s reload

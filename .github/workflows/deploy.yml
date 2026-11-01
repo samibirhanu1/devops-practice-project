@@ -141,6 +141,7 @@ jobs:
           ssh target "mkdir -p /home/deployer/app/nginx"
           scp docker-compose.yml target:/home/deployer/app/docker-compose.yml
           scp nginx/nginx.conf target:/home/deployer/app/nginx/nginx.conf
+          scp -r monitoring target:/home/deployer/app/
 
       - name: Deploy
         run: ssh target "IMAGE_TAG=${{ github.sha }} bash -s" < scripts/deploy.sh
