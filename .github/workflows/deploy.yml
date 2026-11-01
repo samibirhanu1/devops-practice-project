@@ -101,3 +101,52 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+  deploy:
+    name: Deploy to server
+    runs-on: ubuntu-24.04
+    needs: build-push
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.DEPLOY_ENABLED == 'true'
+    environment: production
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    env:
+      SERVER_HOST: ${{ secrets.SERVER_HOST }}
+    steps:
+      - name: Fetch the code
+        uses: actions/checkout@v6
+
+      - name: Prepare SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_HOST_KEY: ${{ secrets.SERVER_HOST_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SERVER_HOST_KEY" > ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<EOF
+          Host target
+            HostName $SERVER_HOST
+            User deployer
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+          EOF
+
+      - name: Copy deployment files
+        run: |
+          ssh target "mkdir -p /home/deployer/app/nginx"
+          scp docker-compose.yml target:/home/deployer/app/docker-compose.yml
+          scp nginx/nginx.conf target:/home/deployer/app/nginx/nginx.conf
+
+      - name: Deploy
+        run: ssh target "IMAGE_TAG=${{ github.sha }} bash -s" < scripts/deploy.sh
+
+      - name: Verify from the outside
+        run: curl -fsS --retry 10 --retry-delay 5 --retry-connrefused "http://$SERVER_HOST/health"
+
+      - name: Record the deployed version
+        run: echo "Deployed commit ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
