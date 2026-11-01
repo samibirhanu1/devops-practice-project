@@ -1,0 +1,6 @@
+# Local development only. Compose loads this file automatically next to
+# docker-compose.yml, so "docker compose up --build" builds the API from ./app.
+# The server only receives docker-compose.yml, so it pulls the published image.
+services:
+  api:
+    build: ./app

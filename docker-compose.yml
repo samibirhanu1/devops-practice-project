@@ -12,7 +12,7 @@ services:
     restart: unless-stopped
 
   api:
-    build: ./app
+    image: ghcr.io/samibirhanu1/devops-practice-project/api:${IMAGE_TAG:-latest}
     env_file: .env
     environment:
       DB_HOST: db
